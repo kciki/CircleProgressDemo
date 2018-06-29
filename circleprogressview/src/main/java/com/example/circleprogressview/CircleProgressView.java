@@ -10,11 +10,9 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
-import android.graphics.SweepGradient;
 import android.support.annotation.Nullable;
 import android.support.v4.view.animation.FastOutSlowInInterpolator;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 
 /**
@@ -25,29 +23,41 @@ public class CircleProgressView extends View {
 
 
     private Paint progressPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private Paint ringBgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint percentageNumberPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-
-    private int defaultColor = Color.GREEN;
-    private int defaultAngle = 0;
-    private int defaultProgresstWidth = 10;
-    private int defaultTextSize = 10;
-    private int defaultWidth = 200;
-    private int defaultHeight = 200;
-    private int defaultSweepAngle = 180;
 
     private int startColor;
     private int endColor;
     private int textColor;
     private int startAngle;
     private float textSize;
-    private float progressWidth;
+    private float ringWidth;
     private int sweepAngle;
+    private boolean isNeedRingBg;
+    private int ringBgColor;
+
+
+    private int defaultColor = Color.GREEN;
+    private int defaultAngle = 45;
+    private int defaultRingtWidth = 24;
+    private int defaultTextSize = 96;
+    private int defaultWidth = 200;
+    private int defaultHeight = 200;
+    private int defaultSweepAngle = 180;
+    private boolean defaultIsNeedRingBg = true;
+    private int defaultRingBgColor = Color.parseColor("#989898");
 
     private float progress = 0;
+    private int duration =1600;
 
     private String percentage;
     private String percentageNumberStr = "  %";
+
+    private int paddingLeft;
+    private int paddingTop;
+    private int paddingRight;
+    private int paddingBottom;
 
 
     public CircleProgressView(Context context) {
@@ -67,19 +77,28 @@ public class CircleProgressView extends View {
         textColor = ta.getColor(R.styleable.CircleProgressView_text_color, defaultColor);
         startAngle = ta.getInteger(R.styleable.CircleProgressView_start_angle, defaultAngle);
         textSize = ta.getDimension(R.styleable.CircleProgressView_text_size, defaultTextSize);
-        progressWidth = ta.getDimension(R.styleable.CircleProgressView_progress_width, defaultProgresstWidth);
+        ringWidth = ta.getDimension(R.styleable.CircleProgressView_ring_width, defaultRingtWidth);
         sweepAngle = ta.getInteger(R.styleable.CircleProgressView_sweep_angle, defaultSweepAngle);
+        isNeedRingBg = ta.getBoolean(R.styleable.CircleProgressView_is_need_ring_bg, defaultIsNeedRingBg);
+        ringBgColor = ta.getColor(R.styleable.CircleProgressView_ring_bg_color, defaultRingBgColor);
+
         init();
     }
 
     private void init() {
 
-        progressPaint.setStrokeWidth(progressWidth);
+        progressPaint.setStrokeWidth(ringWidth);
         progressPaint.setStyle(Paint.Style.STROKE);
         progressPaint.setAntiAlias(true);
         progressPaint.setStrokeCap(Paint.Cap.ROUND);
 
-        percentageNumberPaint.setTextSize(textSize/3);
+        ringBgPaint.setStrokeWidth(ringWidth);
+        ringBgPaint.setStyle(Paint.Style.STROKE);
+        ringBgPaint.setColor(ringBgColor);
+        ringBgPaint.setAntiAlias(true);
+        ringBgPaint.setStrokeCap(Paint.Cap.ROUND);
+
+        percentageNumberPaint.setTextSize(textSize / 3);
         percentageNumberPaint.setStyle(Paint.Style.STROKE);
         percentageNumberPaint.setColor(textColor);
         percentageNumberPaint.setAntiAlias(true);
@@ -124,44 +143,54 @@ public class CircleProgressView extends View {
         super.onDraw(canvas);
 
 
-        int paddingLeft = getPaddingLeft();
-        int paddingTop = getPaddingTop();
-        int paddingRight = getPaddingRight();
-        int paddingBottom = getPaddingBottom();
+        paddingLeft = getPaddingLeft();
+        paddingTop = getPaddingTop();
+        paddingRight = getPaddingRight();
+        paddingBottom = getPaddingBottom();
 
-        int size = Math.min(getHeight(), getWidth());
+        drawRing(canvas);
 
-        float outerRadius = (size / 2) - (progressWidth / 2);
-        float offsetY = (canvas.getHeight() - outerRadius * 2) / 2;
-        Shader shader = new LinearGradient(0, offsetY, 0, offsetY + outerRadius * 2, new int[]{startColor,
-                endColor},
-                null, Shader.TileMode.CLAMP);
-        progressPaint.setShader(shader);
-
-        RectF rectF = new RectF(progressWidth/2 + paddingLeft,
-                progressWidth/2 + paddingTop,
-                getWidth()-progressWidth/2 - paddingRight,
-                getHeight()-progressWidth/2 - paddingBottom);
-
-
-        canvas.drawArc(rectF,startAngle,progress,false,progressPaint);
-
-
-
-        int width = getWidth()-paddingLeft-paddingRight;
-        int height = getHeight()-paddingTop-paddingBottom;
-        percentage =String.valueOf((int)( progress/360*100));
-        Rect bounds = new Rect();
-        textPaint.getTextBounds(percentage,0,percentage.length(),bounds);
-        canvas.drawText(percentage,width/2- bounds.width()/2+paddingLeft,height/2 + bounds.height()/2+paddingTop,textPaint);
-        canvas.drawText(percentageNumberStr,width/2+bounds.width()/2+paddingLeft,height/2 + bounds.height()/2+paddingTop,percentageNumberPaint);
+        drawText(canvas);
 
 
     }
 
+    private void drawRing(Canvas canvas) {
+        int size = Math.min(getHeight(), getWidth());
+
+        float outerRadius = (size / 2) - (ringWidth / 2);
+        float offsetY = (canvas.getHeight() - outerRadius * 2) / 2;
+        Shader shader = new LinearGradient(0, offsetY, 0, offsetY + outerRadius * 2,
+                new int[]{startColor, endColor}, null, Shader.TileMode.CLAMP);
+        progressPaint.setShader(shader);
+
+        RectF rectF = new RectF(ringWidth / 2 + paddingLeft,
+                ringWidth / 2 + paddingTop,
+                getWidth() - ringWidth / 2 - paddingRight,
+                getHeight() - ringWidth / 2 - paddingBottom);
+
+        if (isNeedRingBg) {
+            canvas.drawArc(rectF, 0, 360, false, ringBgPaint);
+        }
+
+        canvas.drawArc(rectF, startAngle, progress, false, progressPaint);
+    }
+
+    private void drawText(Canvas canvas) {
+        int width = getWidth() - paddingLeft - paddingRight;
+        int height = getHeight() - paddingTop - paddingBottom;
+        percentage = String.valueOf((int) (progress / 360 * 100));
+        Rect bounds = new Rect();
+        textPaint.getTextBounds(percentage, 0, percentage.length(), bounds);
+        canvas.drawText(percentage, width / 2 - bounds.width() / 2 + paddingLeft,
+                height / 2 + bounds.height() / 2 + paddingTop, textPaint);
+        canvas.drawText(percentageNumberStr, width / 2 + bounds.width() / 2 + paddingLeft,
+                height / 2 + bounds.height() / 2 + paddingTop, percentageNumberPaint);
+    }
+
     public void startAnim() {
         ObjectAnimator animator = ObjectAnimator.ofFloat(this, "progress", 0, sweepAngle);
-        animator.setDuration(1600);
+        animator.setDuration(duration);
         animator.setInterpolator(new FastOutSlowInInterpolator());
         animator.start();
     }
