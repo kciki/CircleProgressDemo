@@ -1,4 +1,4 @@
-﻿# CircleProgressDemo
+﻿﻿# CircleProgressDemo
 
   环形的自定义进度条
 
@@ -65,28 +65,18 @@ CircleProgressView circleProgressView = findViewById(R.id.circle_progress_view);
 circleProgressView.startAnim();
 ```
 
-## 属性说明
+# 属性说明
 
 |属性名称|作用|
-
 |:---|:---|
-
 |start_color|进度条颜色渐变开始的颜色|
-
 |end_color|进度条颜色渐变结束的颜色|
-
 |text_color|中间文字的颜色|
-
 |text_size|中间文字的百分比值的字体大小|
-
 |ring_width|进度条环形的宽度|
-
 |start_angle|进度条的起始角度0-360|
-
 |sweep_angle|进度条扫过的角度0-360|
-
 |is_need_ring_bg|进度条是否需要背景|
-
 |ring_bg_color|进度条背景的颜色|
 
 
